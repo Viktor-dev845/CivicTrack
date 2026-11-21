@@ -1,0 +1,197 @@
+{
+  "test_images": 28,
+  "best_validation_score": 0.6071428571428572,
+  "results": {
+    "category": {
+      "accuracy": 0.75,
+      "macro_precision": 0.8257575757575757,
+      "macro_recall": 0.7392857142857143,
+      "macro_f1": 0.7515182186234818,
+      "per_class": {
+        "pothole": {
+          "precision": 0.6363636363636364,
+          "recall": 0.875,
+          "f1": 0.7368421052631579,
+          "support": 8
+        },
+        "damaged_streetlight": {
+          "precision": 1.0,
+          "recall": 0.6,
+          "f1": 0.75,
+          "support": 5
+        },
+        "waste_dump": {
+          "precision": 1.0,
+          "recall": 0.625,
+          "f1": 0.7692307692307693,
+          "support": 8
+        },
+        "drainage": {
+          "precision": 0.6666666666666666,
+          "recall": 0.8571428571428571,
+          "f1": 0.75,
+          "support": 7
+        }
+      },
+      "confusion_matrix": [
+        [
+          7,
+          0,
+          0,
+          1
+        ],
+        [
+          2,
+          3,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          5,
+          2
+        ],
+        [
+          1,
+          0,
+          0,
+          6
+        ]
+      ]
+    },
+    "severity": {
+      "accuracy": 0.6428571428571429,
+      "macro_precision": 0.671911421911422,
+      "macro_recall": 0.625,
+      "macro_f1": 0.6235334713595583,
+      "per_class": {
+        "low": {
+          "precision": 0.5384615384615384,
+          "recall": 0.7,
+          "f1": 0.6086956521739131,
+          "support": 10
+        },
+        "medium": {
+          "precision": 0.75,
+          "recall": 0.375,
+          "f1": 0.5,
+          "support": 8
+        },
+        "high": {
+          "precision": 0.7272727272727273,
+          "recall": 0.8,
+          "f1": 0.7619047619047619,
+          "support": 10
+        }
+      },
+      "confusion_matrix": [
+        [
+          7,
+          1,
+          2
+        ],
+        [
+          4,
+          3,
+          1
+        ],
+        [
+          2,
+          0,
+          8
+        ]
+      ]
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "stage": "stage 1",
+      "train_loss": 2.5915048718452454,
+      "val_loss": 2.535865988050188,
+      "val_cat_acc": 0.6785714285714286,
+      "val_sev_acc": 0.4642857142857143
+    },
+    {
+      "epoch": 2,
+      "stage": "stage 1",
+      "train_loss": 2.2473310828208923,
+      "val_loss": 2.130873611995152,
+      "val_cat_acc": 0.6071428571428571,
+      "val_sev_acc": 0.35714285714285715
+    },
+    {
+      "epoch": 3,
+      "stage": "stage 1",
+      "train_loss": 1.9800229221582413,
+      "val_loss": 2.059895787920271,
+      "val_cat_acc": 0.6428571428571429,
+      "val_sev_acc": 0.35714285714285715
+    },
+    {
+      "epoch": 4,
+      "stage": "stage 1",
+      "train_loss": 1.7774587124586105,
+      "val_loss": 2.124460084097726,
+      "val_cat_acc": 0.6428571428571429,
+      "val_sev_acc": 0.39285714285714285
+    },
+    {
+      "epoch": 5,
+      "stage": "stage 1",
+      "train_loss": 1.6469369530677795,
+      "val_loss": 1.9352226938520158,
+      "val_cat_acc": 0.6785714285714286,
+      "val_sev_acc": 0.39285714285714285
+    },
+    {
+      "epoch": 6,
+      "stage": "stage 2",
+      "train_loss": 1.546450063586235,
+      "val_loss": 1.7802972452981132,
+      "val_cat_acc": 0.6785714285714286,
+      "val_sev_acc": 0.42857142857142855
+    },
+    {
+      "epoch": 7,
+      "stage": "stage 2",
+      "train_loss": 1.294630989432335,
+      "val_loss": 1.7134112289973669,
+      "val_cat_acc": 0.7142857142857143,
+      "val_sev_acc": 0.5
+    },
+    {
+      "epoch": 8,
+      "stage": "stage 2",
+      "train_loss": 1.0373076871037483,
+      "val_loss": 1.6970927374703544,
+      "val_cat_acc": 0.7142857142857143,
+      "val_sev_acc": 0.5
+    },
+    {
+      "epoch": 9,
+      "stage": "stage 2",
+      "train_loss": 0.8011224940419197,
+      "val_loss": 1.6692325728280204,
+      "val_cat_acc": 0.7142857142857143,
+      "val_sev_acc": 0.5
+    },
+    {
+      "epoch": 10,
+      "stage": "stage 2",
+      "train_loss": 0.7858107946813107,
+      "val_loss": 1.6426062754222326,
+      "val_cat_acc": 0.6785714285714286,
+      "val_sev_acc": 0.5
+    },
+    {
+      "epoch": 11,
+      "stage": "stage 2",
+      "train_loss": 0.6461391896009445,
+      "val_loss": 1.655566692352295,
+      "val_cat_acc": 0.7142857142857143,
+      "val_sev_acc": 0.5
+    }
+  ]
+}

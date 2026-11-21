@@ -1,0 +1,20 @@
+# Dependencies & builds
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets & local environment
+.env
+*.env.local
+
+# Runtime uploads & raw downloaded images (reproducible via download_dataset.py + provenance.json)
+backend/uploads/
+ai-service/data/real/images/
+ai-service/data/demo/images/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
