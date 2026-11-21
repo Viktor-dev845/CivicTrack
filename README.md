@@ -2,100 +2,80 @@
 
 **An AI-Enabled GIS Framework for Automated Classification and Multi-Criteria Prioritisation of Citizen-Reported Urban Infrastructure Defects**
 
-- **Researcher:** Kalu Victor (Matriculation No: `2025/B/MIT/1280`)
-- **Programme:** Master of Information Technology (MIT) — Artificial Intelligence Specialisation, School of Computing, **MIVA Open University**
-- **Supervisor:** Prof. Ageebee Silas Faki
-- **Pilot City:** Umuahia, Abia State, Nigeria (`5.532°N, 7.486°E`)
+Master's project (MIT, AI specialisation), MIVA Open University.
+Author: Kalu Victor (2025/B/MIT/1280). Supervisor: Prof. Ageebee Silas Faki.
 
----
+Citizens report a problem with a photo and a map pin. An AI model names the defect type and severity,
+duplicate reports are grouped, and city staff work from a ranked list and a hotspot map.
 
-## Overview
+## Project layout
 
-CivicTrack is a standalone, modular three-tier web GIS platform that pairs a transfer-learned dual-head **MobileNetV2** computer vision service with a **PostgreSQL + PostGIS** spatial backend and a **React + Leaflet** web interface:
-
-1. **Citizen Portal (`frontend/`):** Public OpenStreetMap view of verified Umuahia reports colour-coded by severity, a 3-step report submission form (photo upload, GPS/map pin, optional details), and personal repair progress tracking (`Reported → In progress → Resolved`).
-2. **Core API (`backend/`):** Node.js + Express REST service handling JWT authentication, bcrypt password hashing, `sharp` photo sanitisation (EXIF metadata removal), PostGIS duplicate clustering (`25 m`, `168 h`, counting distinct citizens to prevent score inflation), weighted priority ranking (`P = (0.50S + 0.30D + 0.20T) × 100`), DBSCAN hotspot queries (`100 m`, `≥ 3` open reports), and human-in-the-loop admin overrides.
-3. **AI Inference Microservice (`ai-service/`):** Python + FastAPI + PyTorch service running a dual-head MobileNetV2 model (`v20261121-1511`) predicting category (`pothole`, `damaged_streetlight`, `waste_dump`, `drainage`), severity (`low`, `medium`, `high`), and minimum confidence (flagging `< 0.60` or service outages as `needs_review`).
-
----
-
-## Repository Structure
-
-```text
-CivickTrack/
-├── database/
-│   └── schema.sql                # PostgreSQL + PostGIS schema (users, reports, clusters, maintenance_units)
-├── backend/                      # Core API (Node.js + Express)
-│   ├── src/                      # Routes, middleware, priority/duplicate/scoring/AI client services
-│   ├── scripts/                  # migrate.js, seed.js
-│   ├── tests/api.test.js         # 16 automated integration tests (node --test)
-│   ├── .env.example              # Environment variable template (no real credentials)
-│   └── package.json
-├── frontend/                     # Citizen Portal & Admin Dashboard (React + Vite + Tailwind + Leaflet)
-│   └── src/
-├── ai-service/                   # AI Inference Service & Training Pipeline (Python + FastAPI + PyTorch)
-│   ├── app/                      # main.py, model.py (dual-head MobileNetV2)
-│   ├── training/train.py         # Two-stage transfer learning (equal 1:1 CrossEntropy loss)
-│   ├── scripts/                  # download_dataset.py, label_tool.py, measure_latency.py
-│   ├── data/real/                # labels.csv (184 hand-labelled rows), manual_review.json, provenance.json
-│   ├── models/                   # civictrack_model.pt (v20261121-1511), metrics.json, splits.csv, plots
-│   ├── LABELLING.md              # Written severity annotation rubric
-│   └── requirements.txt
-└── screenshots/                  # Application screenshots & model evaluation plots (Figures 4.1–5.3)
-```
-
----
-
-## Verified Evaluation Summary
-
-Tested on an ordinary CPU-only laptop (Intel Core i7-5600U @ 2.60 GHz, 12 GB RAM, Windows 11 Pro, Python 3.14.3, Node.js v24.14.1, PostgreSQL 18.3 + PostGIS 3.7.0):
-
-| Evaluation Check | Verified Result |
+| Folder | What it is |
 |---|---|
-| **Dataset Curation** | `240` Wikimedia Commons candidate photos manually audited via `scripts/label_tool.py` against `LABELLING.md`; `56` off-topic excluded → **`184` hand-labelled photos** (`128` train / `28` val / `28` test) |
-| **Category Classification (28 unseen test photos)** | **75.0% accuracy**, Macro Precision `0.83`, Macro Recall `0.74`, Macro F1 **`0.75`** |
-| **Severity Assessment (28 unseen test photos)** | **64.3% accuracy**, Macro F1 **`0.62`**, **`80%` recall (`0.76` F1) on `high` severity** |
-| **Core API Automated Integration Tests (`npm test`)** | **16 / 16 PASS** (`0` failures, `7.7 s`) |
-| **AI Inference Latency (`measure_latency.py --n 100`)** | Avg **`2,142 ms`**, Median `2,127 ms`, 95th pct `2,244 ms`, Slowest **`2,460 ms`** (**PASS** vs ≤ `2,500 ms` NFR-01) |
+| `database/` | PostgreSQL + PostGIS schema |
+| `backend/` | Core API (Node.js + Express), 16 automated tests |
+| `ai-service/` | AI service (Python + FastAPI + PyTorch, MobileNetV2), training, evaluation and labelling tools |
+| `frontend/` | Citizen portal and admin dashboard (React + Leaflet) |
 
----
+## Results (honest summary)
 
-## Quick Start (Local Development)
+- Model trained on 128 hand-labelled public images (Wikimedia Commons); 28 validation, 28 test.
+- Defect type accuracy 75.0% (21/28). Severity accuracy 64.3% (18/28).
+- Average classification time about 2.1 s over 100 requests (measured on an earlier model version).
+- Limits: public non-Umuahia images, one labeller, small test set, no user survey. See the report, Chapter 5.
 
-### 1. Database (PostgreSQL + PostGIS)
-Create a PostgreSQL database named `civictrack`, then configure `backend/.env` from `backend/.env.example`:
-```powershell
+Quick start for the whole system: see `RUN-EVERYTHING.md`.
+
+## Run the backend (first time)
+
+You need Node.js 20+ and PostgreSQL 15+ with the PostGIS extension.
+
+1. Create an empty database:  `createdb civictrack`  (or use pgAdmin)
+2. In `backend/`, copy `.env.example` to `.env` and fill in your database password and a long random `JWT_SECRET`.
+3. Install and set up:
+   ```
+   cd backend
+   npm install
+   npm run migrate     # creates the tables
+   npm run seed        # creates the first admin and 4 maintenance units
+   npm start           # http://localhost:4000
+   ```
+4. Check it works: open http://localhost:4000/api/health  (should show `{"status":"ok"}`).
+
+Until the AI service exists, new reports are saved and flagged **needs_review**; an administrator
+sets the category and severity by hand. This is the same fallback the report describes (Section 3.4.2).
+
+## Run the tests
+
+Create a second empty database called `civictrack_test`, then:
+```
 cd backend
-npm install
-copy .env.example .env   # set DATABASE_URL and JWT_SECRET
-npm run migrate
-npm run seed
-```
-
-### 2. AI Inference Service (Port 8000)
-```powershell
-cd ai-service
-pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-### 3. Core API Backend (Port 4000)
-```powershell
-cd backend
-npm start
-```
-
-### 4. Frontend Web App (Port 5173)
-```powershell
-cd frontend
-npm install --legacy-peer-deps
-npm run dev -- --host
-```
-Open `http://localhost:5173` in your browser.
-
-### 5. Running the 16 Automated Integration Tests
-```powershell
-cd backend
-$env:TEST_DATABASE_URL = "postgres://postgres:<password>@localhost:5432/civictrack_test"
+set TEST_DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/civictrack_test   (Windows)
+export TEST_DATABASE_URL=...                                                             (Mac/Linux)
 npm test
 ```
+The tests delete and recreate the tables in the test database, so never point them at `civictrack`.
+
+## API summary
+
+| Method and path | Who | What |
+|---|---|---|
+| POST `/api/auth/register`, `/api/auth/login`, GET `/api/auth/me` | anyone / logged in | accounts (new accounts are always citizens) |
+| POST `/api/reports` | citizen | multipart form: `photo`, `latitude`, `longitude`, `description`, `address_text` |
+| GET `/api/reports/public` | anyone | map data, no personal details |
+| GET `/api/reports/mine`, `/api/reports/:id` | owner or admin | own reports and status |
+| GET `/api/admin/reports` | admin | prioritised triage queue (`?status=`, `?needs_review=true`, `?category=`) |
+| PATCH `/api/admin/reports/:id/review` | admin | override AI category and/or severity |
+| PATCH `/api/admin/reports/:id/status` | admin | `reported`, `in_progress`, `resolved` |
+| PATCH `/api/admin/reports/:id/assign` | admin | assign to a maintenance unit |
+| GET `/api/admin/hotspots` | admin | DBSCAN hotspot clusters |
+| GET/POST `/api/admin/units` | admin | maintenance units |
+| POST `/api/admin/recalculate` | admin | refresh all priority scores |
+
+## How the main rules work (match the report)
+
+- **Duplicate detection:** same category, within 25 m, within 7 days, and the original still open. The cluster count (report_count) counts different people, so one person reporting the same problem again does not raise the priority. The public map shows only verified reports: those the AI was confident about, or that an administrator has checked.
+- **Priority score:** `P = (0.50 x severity + 0.30 x density + 0.20 x aging) x 100`
+  (severity low/medium/high = 0.33/0.67/1.0; density = reports in cluster / 10, max 1; aging = hours / 168, max 1).
+- **Low AI confidence** (below 0.6) or **AI service down:** report is saved and flagged for manual review.
+- **Photos:** re-encoded on upload, which removes EXIF data such as the phone's GPS tags.
