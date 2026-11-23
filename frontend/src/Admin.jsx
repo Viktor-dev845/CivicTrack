@@ -5,11 +5,11 @@ import { Card, Button, Field, inputCls, Err, SeverityBadge, StatusBadge, Badge, 
 
 const SEVS = ["low", "medium", "high"];
 
-function Detail({ r, units, onChange, onClose }) {
+function Detail({ r, units, onChange, onNotice, onClose }) {
   const [msg, setMsg] = useState("");
   const [category, setCategory] = useState(r.category || "pothole");
   const [severity, setSeverity] = useState(r.severity || "medium");
-  const run = async (fn) => { setMsg(""); try { await fn(); onChange(); } catch (e) { setMsg(e.message); } };
+  const run = async (fn, note) => { setMsg(""); try { await fn(); if (note) onNotice?.(note); onChange(); } catch (e) { setMsg(e.message); } };
   const conf = r.ai_confidence != null ? Math.round(r.ai_confidence * 100) : null;
   return (
     <Card className="space-y-4 p-0 lg:sticky lg:top-4">
@@ -36,8 +36,9 @@ function Detail({ r, units, onChange, onClose }) {
           {r.needs_review && <div className="flex justify-between"><span className="text-kerb">Flag</span><Badge soft color="#e07b1a">Needs review</Badge></div>}
           {r.duplicate_cluster_id && <div className="flex justify-between"><span className="text-kerb">Cluster</span><b className="font-mono text-xs">#{String(r.duplicate_cluster_id).slice(0, 8)}</b></div>}
         </div>
-        {(r.user_description || r.address_text) && (
+        {(r.reporter_name || r.user_description || r.address_text) && (
           <div className="space-y-1 text-sm">
+            {r.reporter_name && <div><span className="text-kerb">Reported by: </span>{r.reporter_name}</div>}
             {r.address_text && <div><span className="text-kerb">Place: </span>{r.address_text}</div>}
             {r.user_description && <div><span className="text-kerb">Note: </span>{r.user_description}</div>}
           </div>)}
@@ -49,19 +50,21 @@ function Detail({ r, units, onChange, onClose }) {
             <Field label="Category"><select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)}>
               {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
             <Field label="Severity"><select className={inputCls} value={severity} onChange={(e) => setSeverity(e.target.value)}>
-              {SEVS.map((s) => <option key={s}>{s}</option>)}</select></Field>
+              {SEVS.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}</select></Field>
           </div>
-          <Button variant="line" className="w-full" onClick={() => run(() => api(`/admin/reports/${r.id}/review`, { method: "PATCH", json: { category, severity } }))}>Save correction</Button>
+          <Button variant="line" className="w-full" onClick={() => run(() => api(`/admin/reports/${r.id}/review`, { method: "PATCH", json: { category, severity } }), r.needs_review ? "Report verified and published to the public map." : "AI override saved and priority score updated.")}>
+            {r.needs_review ? "Verify & publish report" : "Save correction"}
+          </Button>
         </div>
 
         <div className="space-y-3 border-t border-edge pt-4">
           <h4 className="font-display font-bold">Manage the repair</h4>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Status"><select className={inputCls} value={r.status}
-              onChange={(e) => run(() => api(`/admin/reports/${r.id}/status`, { method: "PATCH", json: { status: e.target.value } }))}>
+              onChange={(e) => run(() => api(`/admin/reports/${r.id}/status`, { method: "PATCH", json: { status: e.target.value } }), `Status updated to "${STATUS_LABELS[e.target.value] || e.target.value}".`)}>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
             <Field label="Assigned unit"><select className={inputCls} value={r.assigned_unit_id || ""}
-              onChange={(e) => run(() => api(`/admin/reports/${r.id}/assign`, { method: "PATCH", json: { unit_id: e.target.value || null } }))}>
+              onChange={(e) => run(() => api(`/admin/reports/${r.id}/assign`, { method: "PATCH", json: { unit_id: e.target.value || null } }), e.target.value ? "Maintenance unit assigned." : "Maintenance unit unassigned.")}>
               <option value="">Not assigned</option>{units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
           </div>
         </div>
@@ -83,7 +86,10 @@ const Score = ({ v }) => {
 
 function Ranked({ units, onChanged }) {
   const [rows, setRows] = useState([]); const [sel, setSel] = useState(null); const [err, setErr] = useState("");
+  const [notice, setNotice] = useState("");
   const [onlyReview, setOnlyReview] = useState(false); const [status, setStatus] = useState("");
+  const flash = useCallback((m) => { setNotice(m); }, []);
+  useEffect(() => { if (!notice) return; const t = setTimeout(() => setNotice(""), 4000); return () => clearTimeout(t); }, [notice]);
   const load = useCallback(() => {
     const q = new URLSearchParams(); if (onlyReview) q.set("needs_review", "true"); if (status) q.set("status", status);
     api(`/admin/reports?${q}`).then((d) => { onChanged?.(); setRows(d.reports); setSel((s) => (s ? d.reports.find((x) => x.id === s.id) || null : null)); }).catch((e) => setErr(e.message));
@@ -96,8 +102,9 @@ function Ranked({ units, onChanged }) {
           <label className="flex items-center gap-2 font-medium"><input type="checkbox" className="h-4 w-4 accent-asphalt" checked={onlyReview} onChange={(e) => setOnlyReview(e.target.checked)} /> Needs review only</label>
           <select className="field !w-auto !py-1.5" value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="">All open</option>{Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-          <Button variant="plain" className="ml-auto py-1.5" onClick={() => api("/admin/recalculate", { method: "POST" }).then(load)}>Recalculate scores</Button>
+          <Button variant="plain" className="ml-auto py-1.5" onClick={() => api("/admin/recalculate", { method: "POST" }).then((d) => { flash(`Recalculated priority scores for ${d.recalculated ?? rows.length} open report(s).`); load(); }).catch((e) => setErr(e.message))}>Recalculate scores</Button>
         </div>
+        {notice && <p role="status" className="rounded-xl border border-low/30 bg-low/10 px-3 py-2 text-sm font-medium text-low">{notice}</p>}
         <Err msg={err} />
         <div className="overflow-x-auto rounded-2xl border border-edge bg-paper">
           <table className="w-full text-left text-sm">
@@ -113,7 +120,7 @@ function Ranked({ units, onChanged }) {
           </table>
         </div>
       </div>
-      <div>{sel ? <Detail key={sel.id + sel.updated_at} r={sel} units={units} onChange={load} onClose={() => setSel(null)} /> : <Card className="p-7 text-center text-sm text-kerb">Select a report to see its photo, check the AI result and manage the repair.</Card>}</div>
+      <div>{sel ? <Detail key={sel.id + sel.updated_at} r={sel} units={units} onChange={load} onNotice={flash} onClose={() => setSel(null)} /> : <Card className="p-7 text-center text-sm text-kerb">Select a report to see its photo, check the AI result and manage the repair.</Card>}</div>
     </div>
   );
 }

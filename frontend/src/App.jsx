@@ -59,14 +59,14 @@ export default function App() {
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {tab === "login" && !user && <Auth onDone={(u) => { setUser(u); setTab(u.role === "admin" ? "admin" : "report"); }} />}
-        {tab === "map" && <PublicMap onReport={() => setTab(user ? "report" : "login")} />}
+        {tab === "map" && <PublicMap isAdmin={user?.role === "admin"} onReport={() => setTab(user?.role === "admin" ? "admin" : user ? "report" : "login")} />}
         {tab === "report" && (user ? <ReportForm onSubmitted={() => setRefresh((n) => n + 1)} onSeeMine={() => setTab("mine")} /> : <Auth onDone={(u) => { setUser(u); setTab("report"); }} />)}
         {tab === "mine" && user && <MyReports refreshKey={refresh} onReport={() => setTab("report")} />}
         {tab === "admin" && user?.role === "admin" && <Admin />}
       </main>
 
       <footer className="border-t border-edge px-4 py-6 text-center text-xs text-kerb">
-        <p>AI-Enhanced CivicTrack — Intelligent GIS Platform for Automated Classification and Prioritisation of Citizen-Reported Infrastructure Issues</p>
+        <p>CivicTrack — An AI-Enabled GIS Framework for Automated Classification and Multi-Criteria Prioritisation of Citizen-Reported Urban Infrastructure Defects</p>
         <p className="mt-1">MIVA Open University &nbsp;•&nbsp; Kalu Victor (Matriculation No: 2025/B/MIT/1280) &nbsp;•&nbsp; Supervisor: Prof. Ageebee Silas Faki</p>
         <p className="mt-1">Map data © OpenStreetMap contributors</p>
       </footer>

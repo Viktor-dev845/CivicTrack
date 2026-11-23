@@ -59,7 +59,7 @@ function HowItWorks() {
   );
 }
 
-export default function PublicMap({ onReport }) {
+export default function PublicMap({ onReport, isAdmin = false }) {
   const [reports, setReports] = useState([]);
   const [catFilter, setCatFilter] = useState("all");
   const [err, setErr] = useState("");
@@ -103,7 +103,7 @@ export default function PublicMap({ onReport }) {
           <div>
             {/* Platform badge */}
             <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(242,194,48,.15)", border: "1px solid rgba(242,194,48,.3)", borderRadius: "9999px", padding: "0.3rem 0.875rem", fontSize: "0.75rem", fontWeight: 600, color: "var(--line)", marginBottom: "1.25rem" }}>
-              <LuSatellite size={13} /> AI-Enhanced Platform · Umuahia, Abia State
+              <LuSatellite size={13} /> AI-Enabled GIS Framework · Umuahia, Abia State
             </div>
 
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem, 5vw, 3.25rem)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1rem" }}>
@@ -123,7 +123,7 @@ export default function PublicMap({ onReport }) {
               onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
             >
-              <LuCamera size={16} /> Report a problem
+              {isAdmin ? <><LuWrench size={16} /> Open admin dashboard</> : <><LuCamera size={16} /> Report a problem</>}
             </button>
           </div>
 

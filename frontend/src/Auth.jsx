@@ -16,9 +16,13 @@ export default function Auth({ onDone }) {
     } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
   }
 
-  function demoLogin() {
+  function demoLogin(role) {
     setMode("login");
-    setF({ full_name: "", email: "admin@civictrack.local", password: "ChangeMe123!" });
+    if (role === "citizen") {
+      setF({ full_name: "", email: "citizen@civictrack.local", password: "Password123!" });
+    } else {
+      setF({ full_name: "", email: "admin@civictrack.local", password: "ChangeMe123!" });
+    }
   }
 
   return (
@@ -44,13 +48,22 @@ export default function Auth({ onDone }) {
           <Button variant="line" disabled={busy} className="w-full py-3">{busy ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}</Button>
         </form>
         {mode === "login" && (
-          <button
-            type="button"
-            className="mt-3 w-full rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete"
-            onClick={demoLogin}
-          >
-            Demo: fill admin credentials
-          </button>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete"
+              onClick={() => demoLogin("citizen")}
+            >
+              Demo: Citizen
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete"
+              onClick={() => demoLogin("admin")}
+            >
+              Demo: Admin
+            </button>
+          </div>
         )}
         <button className="mt-5 text-sm font-semibold underline decoration-line-deep decoration-2 underline-offset-4" onClick={() => setMode(mode === "login" ? "register" : "login")}>
           {mode === "login" ? "New here? Create an account" : "I already have an account"}

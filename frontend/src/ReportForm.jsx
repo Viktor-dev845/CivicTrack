@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
-import { api, apiUpload, UMUAHIA, CATEGORY_LABELS } from "./api.js";
+import { apiUpload, UMUAHIA, CATEGORY_LABELS } from "./api.js";
 import { Card, Button, Field, inputCls, Err, SeverityBadge } from "./components.jsx";
 
 const pin = new L.DivIcon({
@@ -28,6 +28,7 @@ export default function ReportForm({ onSubmitted, onSeeMine }) {
   const [note, setNote] = useState(""); const [place, setPlace] = useState("");
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [done, setDone] = useState(null);
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   function useGps() {
     if (!navigator.geolocation) return setErr("This browser cannot give your location. Tap the map instead.");
@@ -59,11 +60,26 @@ export default function ReportForm({ onSubmitted, onSeeMine }) {
         <div className="grid h-12 w-12 place-items-center rounded-full bg-line font-display text-2xl font-bold">✓</div>
         <h2 className="font-display text-3xl font-bold leading-tight">Report sent. Thank you.</h2>
         {done.needs_review
-          ? <p className="text-kerb">The system was not sure about this photo, so an administrator will check it. It will appear on the public map after that.</p>
+          ? <div className="space-y-1.5 rounded-xl border border-medium/30 bg-medium/10 p-4 text-sm">
+              <div className="font-semibold text-ink">Flagged for administrator review</div>
+              <p className="text-kerb">
+                {done.ai_category && done.ai_confidence != null
+                  ? `The AI guessed ${CATEGORY_LABELS[done.ai_category] || done.ai_category} (${Math.round(done.ai_confidence * 100)}% confidence — below the 60% auto-publish threshold), so an administrator will verify it before it appears on the public map.`
+                  : "The AI service could not classify this photo automatically, so an administrator will check it. It will appear on the public map after review."}
+              </p>
+            </div>
           : <div className="space-y-2 rounded-xl bg-concrete p-4 text-sm">
-              <div className="text-kerb">The system read your photo as</div>
+              <div className="text-kerb">The AI model classified your photo as</div>
               <div className="font-display text-xl font-bold">{CATEGORY_LABELS[done.category] || done.category}</div>
-              <SeverityBadge s={done.severity} />
+              <div className="flex flex-wrap items-center gap-2">
+                <SeverityBadge s={done.severity} />
+                {done.ai_confidence != null && (
+                  <span className="text-xs font-semibold text-kerb">AI confidence: {Math.round(done.ai_confidence * 100)}%</span>
+                )}
+                {done.priority_score != null && (
+                  <span className="text-xs font-semibold text-kerb">· Priority: {Math.round(Number(done.priority_score))} / 100</span>
+                )}
+              </div>
             </div>}
         {done.duplicate_count > 1 && <p className="text-sm text-kerb">Other people have reported this problem nearby — your report was grouped with theirs and moves up the queue.</p>}
         <div className="flex flex-wrap gap-2 pt-1">
