@@ -5,24 +5,31 @@ import { Button, Field, inputCls, Err, Logo } from "./components.jsx";
 export default function Auth({ onDone }) {
   const [mode, setMode] = useState("login");
   const [f, setF] = useState({ full_name: "", email: "", password: "" });
+  const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  async function submit(e) {
-    e.preventDefault(); setErr(""); setBusy(true);
+  async function doAuth(targetMode, payload) {
+    setErr(""); setBusy(true);
     try {
-      const data = await api(mode === "login" ? "/auth/login" : "/auth/register", { method: "POST", json: f });
+      const clean = { ...payload, email: (payload.email || "").trim() };
+      const data = await api(targetMode === "login" ? "/auth/login" : "/auth/register", { method: "POST", json: clean });
       setToken(data.token); onDone(data.user);
     } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
   }
 
+  function submit(e) {
+    e.preventDefault();
+    doAuth(mode, f);
+  }
+
   function demoLogin(role) {
     setMode("login");
-    if (role === "citizen") {
-      setF({ full_name: "", email: "citizen@civictrack.local", password: "Password123!" });
-    } else {
-      setF({ full_name: "", email: "admin@civictrack.local", password: "ChangeMe123!" });
-    }
+    const creds = role === "citizen"
+      ? { full_name: "", email: "citizen@civictrack.local", password: "Password123!" }
+      : { full_name: "", email: "admin@civictrack.local", password: "ChangeMe123!" };
+    setF(creds);
+    doAuth("login", creds);
   }
 
   return (
@@ -42,7 +49,12 @@ export default function Auth({ onDone }) {
           {mode === "register" && <Field label="Full name"><input className={inputCls} value={f.full_name} onChange={set("full_name")} required autoComplete="name" /></Field>}
           <Field label="Email"><input type="email" className={inputCls} value={f.email} onChange={set("email")} required autoComplete="email" /></Field>
           <Field label="Password" hint={mode === "register" ? "At least 8 characters." : undefined}>
-            <input type="password" className={inputCls} value={f.password} onChange={set("password")} required autoComplete={mode === "login" ? "current-password" : "new-password"} />
+            <div className="relative">
+              <input type={showPw ? "text" : "password"} className={`${inputCls} pr-16`} value={f.password} onChange={set("password")} required autoComplete={mode === "login" ? "current-password" : "new-password"} />
+              <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs font-semibold text-kerb hover:text-asphalt">
+                {showPw ? "Hide" : "Show"}
+              </button>
+            </div>
           </Field>
           <Err msg={err} />
           <Button variant="line" disabled={busy} className="w-full py-3">{busy ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}</Button>
@@ -51,14 +63,16 @@ export default function Auth({ onDone }) {
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               type="button"
-              className="rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete"
+              disabled={busy}
+              className="rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete disabled:opacity-50"
               onClick={() => demoLogin("citizen")}
             >
               Demo: Citizen
             </button>
             <button
               type="button"
-              className="rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete"
+              disabled={busy}
+              className="rounded-xl border border-dashed border-edge bg-concrete/50 py-2 text-xs font-semibold text-kerb hover:bg-concrete disabled:opacity-50"
               onClick={() => demoLogin("admin")}
             >
               Demo: Admin
